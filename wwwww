@@ -1,0 +1,177 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+
+local settings_tbl = {
+    ESP_Enabled = true,
+    WalkSpeed = 16,
+    JumpPower = 50,
+}
+
+local function createESP(player)
+    local highlight = Instance.new("Highlight")
+    highlight.Adornee = player.Character or player.CharacterAdded:Wait()
+    highlight.FillColor = Color3.new(1, 0, 0)
+    highlight.FillTransparency = 0.5
+    highlight.OutlineColor = Color3.new(1, 1, 1)
+    highlight.Parent = player.Character
+end
+
+local function destroyESP(player)
+    if player.Character and player.Character:FindFirstChild("Highlight") then
+        player.Character.Highlight:Destroy()
+    end
+end
+
+local function onCharacterAdded(character)
+    character:WaitForChild("Humanoid").WalkSpeed = settings_tbl.WalkSpeed
+    character:WaitForChild("Humanoid").JumpPower = settings_tbl.JumpPower
+
+    if settings_tbl.ESP_Enabled then
+        createESP(LocalPlayer)
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+                createESP(player)
+            end
+        end
+    end
+end
+
+LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
+
+local function onPlayerAdded(player)
+    player.CharacterAdded:Connect(function()
+        if settings_tbl.ESP_Enabled then
+            createESP(player)
+        end
+    end)
+end
+
+for _, player in pairs(Players:GetPlayers()) do
+    onPlayerAdded(player)
+end
+
+Players.PlayerAdded:Connect(onPlayerAdded)
+
+RunService.Heartbeat:Connect(function()
+    if settings_tbl.ESP_Enabled then
+        for _, player in pairs(Players:GetPlayers()) do
+            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                createESP(player)
+            else
+                destroyESP(player)
+            end
+        end
+    end
+end)
+
+local screenGui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
+local loadingFrame = Instance.new("Frame", screenGui)
+loadingFrame.Size = UDim2.new(1, 0, 1, 0)
+loadingFrame.BackgroundColor3 = Color3.new(0, 0, 0)
+loadingFrame.Position = UDim2.new(0, 0, 0, 0)
+
+local loadingLabel = Instance.new("TextLabel", loadingFrame)
+loadingLabel.Size = UDim2.new(1, 0, 0.1, 0)
+loadingLabel.Position = UDim2.new(0, 0, 0.45, 0)
+loadingLabel.Text = "by w1z4er"
+loadingLabel.TextColor3 = Color3.new(1, 1, 1)
+loadingLabel.BackgroundTransparency = 1
+
+wait(2)
+loadingFrame:Destroy()
+
+local function CreateRainbowButton(name, position, callback)
+    local button = Instance.new("TextButton", screenGui)
+    button.Size = UDim2.new(0.3, 0, 0.1, 0)
+    button.Position = position
+    button.Text = name
+    button.BackgroundColor3 = Color3.new(1, 1, 1)
+
+    coroutine.wrap(function()
+        while true do
+            for i = 0, 1, 0.01 do
+                button.BackgroundColor3 = Color3.fromHSV(i, 1, 1)
+                wait(0.02)
+            end
+        end
+    end)()
+
+    button.MouseButton1Click:Connect(callback)
+    return button
+end
+
+CreateRainbowButton("Set WalkSpeed: " .. settings_tbl.WalkSpeed, UDim2.new(0.35, 0, 0.1, 0), function()
+    local input = Instance.new("TextBox", screenGui)
+    input.Size = UDim2.new(0.3, 0, 0.1, 0)
+    input.Position = UDim2.new(0.35, 0, 0.2, 0)
+    input.PlaceholderText = "Enter WalkSpeed"
+    input.FocusLost:Connect(function(enterPressed)
+        if enterPressed then
+            local newSpeed = tonumber(input.Text)
+            if newSpeed then
+                settings_tbl.WalkSpeed = newSpeed
+                if LocalPlayer.Character and LocalPlayer.Character:WaitForChild("Humanoid") then
+                    LocalPlayer.Character.Humanoid.WalkSpeed = newSpeed
+                end
+                input:Destroy()
+            end
+        end
+    end)
+end)
+
+CreateRainbowButton("Set JumpPower: " .. settings_tbl.JumpPower, UDim2.new(0.35, 0, 0.3, 0), function()
+    local input = Instance.new("TextBox", screenGui)
+    input.Size = UDim2.new(0.3, 0, 0.1, 0)
+    input.Position = UDim2.new(0.35, 0, 0.4, 0)
+    input.PlaceholderText = "Enter JumpPower"
+    input.FocusLost:Connect(function(enterPressed)
+        if enterPressed then
+            local newJumpPower = tonumber(input.Text)
+            if newJumpPower then
+                settings_tbl.JumpPower = newJumpPower
+                if LocalPlayer.Character and LocalPlayer.Character:WaitForChild("Humanoid") then
+                    LocalPlayer.Character.Humanoid.JumpPower = newJumpPower
+                end
+                input:Destroy()
+            end
+        end
+    end)
+end)
+
+CreateRainbowButton("Toggle ESP", UDim2.new(0.35, 0, 0.5, 0), function()
+    settings_tbl.ESP_Enabled = not settings_tbl.ESP_Enabled
+    if settings_tbl.ESP_Enabled then
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+                createESP(player)
+            end
+        end
+    else
+        for _, player in pairs(Players:GetPlayers()) do
+            destroyESP(player)
+        end
+    end
+end)
+
+local colors = {
+    Color3.fromRGB(255, 0, 0),
+    Color3.fromRGB(0, 255, 0),
+    Color3.fromRGB(0, 0, 255),
+    Color3.fromRGB(255, 255, 0),
+    Color3.fromRGB(0, 255, 255),
+    Color3.fromRGB(255, 0, 255)
+}
+
+coroutine.wrap(function()
+    while true do
+        for _, button in pairs(screenGui:GetChildren()) do
+            if button:IsA("TextButton") then
+                for _, color in ipairs(colors) do
+                    button.BackgroundColor3 = color
+                    wait(2)
+                end
+            end
+        end
+    end
+end)()
